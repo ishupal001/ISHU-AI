@@ -4,17 +4,18 @@
   "description": "ISHU AI Chatbot",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "axios": "^1.20.0",
-    "bcryptjs": "^3.0.3",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "jsonwebtoken": "^9.0.3",
-    "ollama": "^0.6.4",
-    "sqlite3": "^6.0.1"
-  }
+   "rebuild": "npm rebuild sqlite3 --build-from-source",
+   "start": "node server.js"
+   },
+   "dependencies": {
+     "@google/generative-ai": "^0.24.1",
+     "axios": "^1.20.0",
+     "bcryptjs": "^3.0.3",
+     "cors": "^2.8.5",
+     "dotenv": "^16.4.5",
+     "express": "^4.19.2",
+     "jsonwebtoken": "^9.0.3",
+     "ollama": "^0.6.4",
+     "sqlite3": "^6.0.1" 
+   }
 }
