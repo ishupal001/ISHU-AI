@@ -5,7 +5,7 @@ const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const ollama = require('ollama').default;
+const { Ollama } = require('ollama'); // 🔥 Ollama Cloud के लिए
 require('dotenv').config();
 
 const app = express();
@@ -14,6 +14,12 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// 🔥 Ollama Cloud Setup
+const ollamaCloud = new Ollama({
+    host: 'https://ollama.com',
+    headers: { Authorization: 'Bearer ' + process.env.OLLAMA_API_KEY }
+});
 
 const db = new sqlite3.Database('./ishu_memory.db');
 
@@ -44,7 +50,7 @@ app.post('/api/login', (req, res) => {
         if (err || !user) return res.status(400).json({ error: "Invalid email or password!" });
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ error: "Invalid email or password!" });
-        const token = jwt.sign({ id: user.id }, "secret_key", { expiresIn: '7d' });
+        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || "secret_key", { expiresIn: '7d' });
         res.json({ success: true, token: token });
     });
 });
@@ -53,7 +59,7 @@ app.post('/api/login', (req, res) => {
 app.get('/api/history', (req, res) => {
     const token = req.headers.authorization;
     let userId = 0; 
-    if(token) { try { const decoded = jwt.verify(token, "secret_key"); userId = decoded.id; } catch(e) {} }
+    if(token) { try { const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret_key"); userId = decoded.id; } catch(e) {} }
     
     db.all("SELECT session_id, message FROM chat_memory WHERE role = 'user' AND user_id = ? GROUP BY session_id ORDER BY id DESC", [userId], (err, rows) => {
         if (err) return res.status(500).json({ error: "DB Error" });
@@ -65,7 +71,7 @@ app.get('/api/history', (req, res) => {
 app.post('/api/chat-details', (req, res) => {
     const token = req.headers.authorization;
     let userId = 0;
-    if(token) { try { const decoded = jwt.verify(token, "secret_key"); userId = decoded.id; } catch(e) {} }
+    if(token) { try { const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret_key"); userId = decoded.id; } catch(e) {} }
     const sessionId = req.body.session_id;
     
     db.all("SELECT role, message FROM chat_memory WHERE session_id = ? AND user_id = ? ORDER BY id ASC", [sessionId, userId], (err, rows) => {
@@ -78,7 +84,7 @@ app.post('/api/chat-details', (req, res) => {
 app.post('/api/clear-chats', (req, res) => {
     const token = req.headers.authorization;
     let userId = 0;
-    if(token) { try { const decoded = jwt.verify(token, "secret_key"); userId = decoded.id; } catch(e) {} }
+    if(token) { try { const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret_key"); userId = decoded.id; } catch(e) {} }
     db.run("DELETE FROM chat_memory WHERE user_id = ?", [userId], (err) => {
         if (err) return res.status(500).json({ error: "DB Error" });
         res.json({ success: true });
@@ -95,21 +101,19 @@ app.get('/api/export', (req, res) => {
     });
 });
 
-// 🔥 MAIN CHAT API (Translation Fix + Memory)
+// 🔥 MAIN CHAT API (Ollama Cloud + Memory + Translation)
 app.post('/api/chat', async (req, res) => {
     try {
         const token = req.headers.authorization;
         let userId = 0;
-        if(token) { try { const decoded = jwt.verify(token, "secret_key"); userId = decoded.id; } catch(e) {} }
+        if(token) { try { const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret_key"); userId = decoded.id; } catch(e) {} }
 
         let userMessage = req.body.message || "";
         let imageBase64 = req.body.image || null;
         let sessionId = req.body.session_id || "default_session";
 
-        // यूजर का मैसेज सेव करो
         db.run("INSERT INTO chat_memory (user_id, session_id, role, message) VALUES (?, ?, ?, ?)", [userId, sessionId, "user", userMessage]);
 
-        // 🔥 पिछली बातचीत (Memory) निकालो
         db.all("SELECT role, message FROM chat_memory WHERE session_id = ? AND user_id = ? ORDER BY id DESC LIMIT 20", [sessionId, userId], async (err, rows) => {
             if (err) return res.status(500).json({ reply: "⚠ ERROR: DB_01" });
 
@@ -118,11 +122,10 @@ app.post('/api/chat', async (req, res) => {
                 parts: [{ text: row.message }]
             }));
 
-            // 🔥 System Prompt (Translation Rule + Memory)
-            let systemInstruction = `You are ISHU AI, a smart and helpful AI assistant. 
+            let systemInstruction = `You are ISHU AI, a smart and helpful AI assistant created by Ishu. 
 
             CRITICAL RULES:
-            1. If the user says "हिंदी में बोलो" or "is ko hindi ma do" or "hindi me bolo", look at the PREVIOUS assistant message in the history. Translate THAT exact message into Hindi. Do NOT say "Namaste, how can I help you?". Do NOT ask what to translate. Just translate the previous reply into Hindi.
+            1. If the user says "हिंदी में बोलो" or "is ko hindi ma do", look at the PREVIOUS assistant message in the history. Translate that exact message into Hindi.
             2. If the user says "give me in English", translate the previous message into English.
             3. Answer the user's question directly. NEVER ask "How can I help you?" if the user has already asked something.
             4. Do NOT use asterisks (*), hashtags (#), or markdown tables.
@@ -144,7 +147,8 @@ app.post('/api/chat', async (req, res) => {
             console.log(`⏳ Processing request for User ID: ${userId}...`);
 
             try {
-                const response = await ollama.chat({ 
+                // 🔥 Ollama Cloud Call
+                const response = await ollamaCloud.chat({ 
                     model: 'gpt-oss:120b-cloud', 
                     messages: messages,
                     options: { temperature: 0.7, num_ctx: 4096 }
@@ -168,5 +172,5 @@ app.post('/api/chat', async (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`✅ ISHU AI Server running on: http://localhost:${PORT}`);
-    console.log(`🚀 Memory + Translation Mode Active!`);
+    console.log(`🚀 Ollama Cloud Mode Active!`);
 });
