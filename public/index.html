@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d1117">
+    <title>ISHU AI</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- 🔥 PWA Links (App banane ke liye) -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body>
+    <!-- AUTH MODAL (Logo Medium + Cross Button) -->
+    <div id="authModal" style="display: none; position: fixed; inset: 0; background: rgba(13, 17, 23, 0.9); backdrop-filter: blur(5px); z-index: 100; justify-content: center; align-items: center; font-family: 'Inter', sans-serif;">
+        
+        <div style="position: relative; background: #161b22; border: 1px solid #30363d; border-radius: 16px; padding: 40px; width: 420px; max-width: 90%; color: #c9d1d9; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            
+            <!-- 🔥 Cross (✕) Button to Close -->
+            <button id="closeAuthCross" style="position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #8b949e; font-size: 24px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.color='#f85149'" onmouseout="this.style.color='#8b949e'">✕</button>
+
+            <!-- 🔥 Logo (Medium Size) -->
+            <img src="logo.png" alt="ISHU AI" style="width: 100px; margin-bottom: 20px; border-radius: 12px;">
+            
+            <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 8px; color: #ffffff;">Welcome to ISHU AI</h1>
+            <p style="font-size: 14px; color: #8b949e; margin-bottom: 24px;">Log in with your email to continue.</p>
+            
+            <input type="email" id="authEmail" placeholder="Email address" style="width: 100%; padding: 12px; margin-bottom: 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; color: white; outline: none; font-family: 'Inter', sans-serif;">
+            <input type="password" id="authPassword" placeholder="Password" style="width: 100%; padding: 12px; margin-bottom: 20px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; color: white; outline: none; font-family: 'Inter', sans-serif;">
+            
+            <button id="loginBtn" style="width: 100%; padding: 12px; background: #238636; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; margin-bottom: 12px;">Log In</button>
+            <button id="signupBtn" style="width: 100%; padding: 12px; background: transparent; color: #58a6ff; border: 1px solid #30363d; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">Create an account</button>
+            
+            <p id="authError" style="color: #f85149; font-size: 13px; margin-top: 15px; display: none;"></p>
+            
+            <!-- 🔥 Continue as Guest Button -->
+            <button id="closeAuthBtn" style="margin-top: 20px; background: transparent; border: none; color: #8b949e; cursor: pointer; font-size: 13px;">Continue as Guest</button>
+        </div>
+    </div>
+
+    <div id="sidebarOverlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 15;"></div>
+
+    <div class="app" id="mainApp">
+        <aside class="sidebar" id="sidebar">
+            <div class="brand" style="display: flex; justify-content: flex-start; padding: 0px 0px 10px 5px; margin-top: -10px;">
+                <img src="logo.png" alt="ISHU AI Logo" style="width: 180px; height: auto; object-fit: contain;">
+            </div>
+            <hr style="border: 0; border-top: 1px solid #30363d; margin: 0 0 15px 0;">
+            <button class="new-chat" id="newChat">+ New Chat</button>
+            <p class="section-label">WORKSPACE</p>
+            <button class="side-link">◈ Explore AI</button>
+            <button class="side-link">▤ My Projects</button>
+            <button class="side-link">⌘ Coding Assistant</button>
+            <button class="side-link" id="exportDataBtn" style="color: #3ddc97; font-weight: bold;">⬇ Export Training Data</button>
+            <button class="side-link" id="settingsBtn">⚙ Settings</button>
+            <button class="side-link" id="authToggleBtn" style="color: #58a6ff; font-weight: bold;">🔐 Login / Sign Up</button>
+            <p class="section-label" style="margin-top: 20px;">RECENT CHATS</p>
+            <div id="chatHistoryList"></div>
+            <div class="sidebar-bottom">
+                <div class="status-dot"></div>
+                <span>ISHU AI · Development</span>
+            </div>
+        </aside>
+
+        <main class="main">
+            <header class="topbar">
+                <button class="menu-button" id="menuButton" style="display: none;">☰</button>
+                <div class="model-label">
+                    <span class="online-dot"></span> ISHU AI <span class="version">Pro</span>
+                </div>
+                <button class="profile" id="logoutBtn" title="Logout" style="display: none;">I</button>
+            </header>
+
+            <section class="chat-area" id="chatArea">
+                <div class="welcome" id="welcome">
+                    <div class="hero-icon">✳</div>
+                    <p class="eyebrow">YOUR AI. YOUR WORKSPACE.</p>
+                    <h1>Think bigger.<br><span>Build with ISHU AI.</span></h1>
+                    <p class="subtitle">Your personal workspace for ideas, coding, learning and creating something extraordinary.</p>
+                    <div class="suggestions">
+                        <button class="suggestion" data-prompt="Help me learn coding"><span>⌘</span><strong>Learn coding</strong><small>Build your next project</small></button>
+                        <button class="suggestion" data-prompt="Help me plan a website"><span>◈</span><strong>Create a website</strong><small>Turn ideas into reality</small></button>
+                        <button class="suggestion" data-prompt="Explain a difficult topic simply"><span>✳</span><strong>Learn something</strong><small>Understand complex topics</small></button>
+                        <button class="suggestion" data-prompt="Help me plan my next project"><span>▤</span><strong>Plan a project</strong><small>Organize your next steps</small></button>
+                    </div>
+                </div>
+                <div class="messages" id="messages"></div>
+            </section>
+
+            <section class="composer-section">
+                <form class="composer" id="chatForm">
+                    <textarea id="userInput" placeholder="Type a message or hold to speak" rows="1"></textarea>
+                    <div class="composer-footer">
+                        <div class="composer-left">
+                            <button type="button" class="pill-btn" id="thinkBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg> Think</button>
+                            <button type="button" class="pill-btn active" id="searchBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
+                        </div>
+                        <div class="composer-right">
+                            <input type="file" id="fileInput" style="display: none;" accept=".txt, .pdf, .png, .jpg, .jpeg, .js, .html, .css">
+                            <button type="button" class="icon-btn" id="fileButton">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            </button>
+                            <button type="button" class="icon-btn" id="micButton">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path></svg>
+                            </button>
+                            <button type="submit" class="icon-btn send-btn" id="sendButton" style="display: none;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                <p class="disclaimer">ISHU AI can make mistakes. Consider checking important information.</p>
+            </section>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 50; justify-content: center; align-items: center;">
+        <div style="background: #161b22; border: 1px solid #30363d; border-radius: 12px; width: 450px; max-width: 90%; color: #c9d1d9; display: flex; flex-direction: column; max-height: 80vh;">
+            <div style="padding: 20px; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 18px; margin: 0;">⚙ Settings</h3>
+                <button id="closeSettingsBtn" style="background: transparent; border: none; color: #8b949e; font-size: 20px; cursor: pointer;">✕</button>
+            </div>
+            <div style="padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px;">
+                <div>
+                    <label style="font-size: 14px; font-weight: bold; margin-bottom: 5px; display: block;">AI Voice</label>
+                    <select id="voiceSelect" style="width: 100%; padding: 10px; background: #21262d; color: white; border: 1px solid #30363d; border-radius: 8px; outline: none;">
+                        <option value="hi-IN">Rahul (Hindi Male)</option>
+                        <option value="hi-IN">Priya (Hindi Female)</option>
+                        <option value="en-US">John (English US)</option>
+                        <option value="en-GB">Emma (English UK)</option>
+                    </select>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div><label style="font-size: 14px; font-weight: bold; display: block;">Auto Speak</label></div>
+                    <input type="checkbox" id="autoSpeakToggle" style="width: 20px; height: 20px; cursor: pointer;">
+                </div>
+                <div style="border-top: 1px solid #30363d; padding-top: 15px;">
+                    <button id="clearChatBtn" style="width: 100%; padding: 10px; background: rgba(248, 81, 73, 0.1); color: #f85149; border: 1px solid #f85149; border-radius: 8px; cursor: pointer;">Clear All Chats</button>
+                </div>
+            </div>
+            <div style="padding: 20px; border-top: 1px solid #30363d; display: flex; justify-content: flex-end;">
+                <button id="saveSettingsBtn" style="background: #238636; border: none; color: white; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+    <!-- 🔥 Service Worker Register (App ke liye) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => { console.log('Service Worker registered'); })
+                    .catch(err => { console.log('Service Worker registration failed: ', err); });
+            });
+        }
+    </script>
+</body>
+</html>
